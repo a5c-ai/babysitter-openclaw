@@ -8,7 +8,7 @@ var PLUGIN_ROOT = process.env.PLUGIN_ROOT || process.env.PLUGIN_ROOT || path.res
 var stdin = "";
 try { stdin = readFileSync(0, "utf8"); } catch {}
 try {
-  var result = execSync("bash " + JSON.stringify(path.join(PLUGIN_ROOT, "hooks/before-prompt-build.sh")), {
+  var result = execSync("bash " + JSON.stringify(path.join(PLUGIN_ROOT, "hooks/pre-tool-use.sh")), {
     input: stdin,
     stdio: ["pipe", "pipe", "pipe"],
     timeout: 30000,

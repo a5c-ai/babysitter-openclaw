@@ -1,14 +1,15 @@
 {
   "name": "babysitter",
-  "version": "5.0.1-staging.5311eef77202",
+  "version": "5.0.1-staging.999cafb91f80",
   "description": "Orchestrate complex, multi-step workflows with event-sourced state management, hook-based extensibility, and human-in-the-loop approval",
   "entrypoint": "extensions/index.ts",
   "hooks": {
-    "session_start": "extensions/hooks/session-start.ts",
-    "onEvent": "extensions/hooks/on-event.ts",
-    "agent_end": "extensions/hooks/agent-end.ts",
-    "session_end": "extensions/hooks/session-end.ts",
-    "before_prompt_build": "extensions/hooks/before-prompt-build.ts"
+    "gateway.request.received": "extensions/hooks/gateway-request-received.ts",
+    "plugin.turn.stop": "extensions/hooks/plugin-turn-stop.ts",
+    "gateway.request.routed": "extensions/hooks/gateway-request-routed.ts",
+    "plugin.tool.before": "extensions/hooks/plugin-tool-before.ts",
+    "plugin.tool.after": "extensions/hooks/plugin-tool-after.ts",
+    "gateway.request.completed": "extensions/hooks/gateway-request-completed.ts"
   },
   "capabilities": [
     "orchestration",
