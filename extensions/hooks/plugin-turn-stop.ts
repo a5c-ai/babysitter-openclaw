@@ -14,7 +14,7 @@ export async function pluginTurnStopHandler(context: Record<string, unknown>): P
       input: JSON.stringify(context),
       stdio: ["pipe", "pipe", "pipe"],
       timeout: 30000,
-      env: { ...process.env, ADAPTER_NAME: "openclaw", PLUGIN_ROOT },
+      env: { ...process.env, ADAPTER_NAME: "openclaw", PLUGIN_ROOT, CLAUDE_PLUGIN_ROOT: PLUGIN_ROOT },
     });
   } catch { /* best-effort */ }
 }
