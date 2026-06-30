@@ -13,24 +13,31 @@ The SDK (`@a5c-ai/babysitter-sdk`) remains the single source of truth for orches
 
 ## Installation
 
-### Primary: Babysitter Harness Install
+Install the Babysitter CLI once:
 
 ```bash
+npm install -g @a5c-ai/babysitter
+```
+
+### Primary: Babysitter Harness Install
+
+Use the SDK helper for scriptable global or workspace installs. This is the canonical path used by the installer tests and resolves to `npx --yes @a5c-ai/babysitter-openclaw install ...` under the hood:
+
+```bash
+# Global install
 babysitter harness:install-plugin openclaw
+
+# Workspace install
+babysitter harness:install-plugin openclaw --workspace /path/to/repo
 ```
 
 This installs the `@a5c-ai/babysitter-openclaw` npm package and registers it with OpenClaw.
 
-### Secondary: npm
+### Secondary: Published package installer
 
 ```bash
-npm install -g @a5c-ai/babysitter-openclaw
-```
-
-The `postinstall` script registers the plugin globally. To install into a specific workspace:
-
-```bash
-npx @a5c-ai/babysitter-openclaw install --workspace /path/to/repo
+npx --yes @a5c-ai/babysitter-openclaw install --global
+npx --yes @a5c-ai/babysitter-openclaw install --workspace /path/to/repo
 ```
 
 ### Verify Installation
@@ -42,7 +49,7 @@ babysitter harness:discover --json
 ### Removal
 
 ```bash
-npm uninstall -g @a5c-ai/babysitter-openclaw
+npx --yes @a5c-ai/babysitter-openclaw uninstall --global
 ```
 
 ## Architecture
@@ -68,7 +75,7 @@ OpenClaw is a **daemon-based harness**. It runs as a persistent process and expo
 3. **Each agent turn ends** -- `agent_end` hook fires asynchronously (fire-and-forget via `spawn` + `unref`), triggering `babysitter hook:run --hook-type stop --harness openclaw` to advance the orchestration iteration.
 4. **Session ends** -- `session_end` hook finalizes any active Babysitter runs.
 
-The `agent_end` handler intentionally uses `spawn` with `unref()` rather than `execFileSync` so it does not block the next agent turn. Errors are logged to `$BABYSITTER_LOG_DIR/babysitter-agent-end-hook.log` but never propagate to the agent.
+The `agent_end` handler intentionally uses `spawn` with `unref()` rather than `execFileSync` so it does not block the next agent turn. Errors are logged to `$BABYSITTER_LOG_D../platform-end-hook.log` but never propagate to the agent.
 
 ### Dual Hook Surface
 
@@ -109,7 +116,7 @@ The extension registers 17 slash commands (15 named commands plus `/babysit` and
 | `/assimilate` | `/babysitter:assimilate` | Convert external methodologies into processes |
 | `/contrib` | `/babysitter:contrib` | Submit feedback or contributions |
 | `/help` | `/babysitter:help` | Babysitter documentation and usage help |
-| `/plugins` | `/babysitter:plugins` | Manage Babysitter plugins |
+| `/blueprints` | `/babysitter:blueprints` | Manage Babysitter blueprints |
 | `/user-install` | `/babysitter:user-install` | Set up Babysitter for your user profile |
 | `/project-install` | `/babysitter:project-install` | Onboard a project for Babysitter orchestration |
 
@@ -134,7 +141,7 @@ Skills are defined in `skills/` and exposed through OpenClaw's skill system:
 | **assimilate** | Convert external methodologies or specifications into Babysitter process definitions |
 | **contrib** | Submit feedback or contribute to the Babysitter project |
 | **help** | Documentation and usage guidance for commands, processes, and methodologies |
-| **plugins** | List, install, configure, update, or uninstall Babysitter plugins |
+| **blueprints** | List, install, configure, update, or uninstall Babysitter blueprints |
 | **user-install** | Guided user onboarding -- profile setup, dependency installation, preferences |
 | **project-install** | Guided project onboarding -- codebase analysis, profile setup, CI/CD configuration |
 
@@ -147,7 +154,7 @@ OpenClaw hooks are registered programmatically in `extensions/index.ts` via `api
 **File:** `extensions/hooks/session-start.ts`
 **Maps to:** `babysitter hook:run --hook-type session-start --harness openclaw`
 
-Fires when an OpenClaw session begins. Initializes Babysitter state, ensures the CLI is available (falls back to `npx` if not installed globally), and sets up the state directory. Runs synchronously with a 30-second timeout (60 seconds for `npx` fallback). Errors are logged but do not block the session.
+Fires when an OpenClaw session begins. Initializes Babysitter state, ensures the CLI is available (falls back to explicit-bin `npm exec` if not installed globally), and sets up the state directory. Runs synchronously with a 30-second timeout (60 seconds for the npm exec fallback). Errors are logged but do not block the session.
 
 ### session_end
 
@@ -190,7 +197,7 @@ The SDK version is pinned in `versions.json`:
 {"sdkVersion": "0.0.184-staging.58c6c09c"}
 ```
 
-When the `babysitter` CLI is not available globally, hooks fall back to `npx -y @a5c-ai/babysitter-sdk@<pinned-version>`.
+When the `babysitter` CLI is not available globally, hooks fall back to `npm exec --yes --package @a5c-ai/babysitter-sdk@<pinned-version> -- babysitter`.
 
 ### Config Files
 
@@ -204,7 +211,7 @@ When the `babysitter` CLI is not available globally, hooks fall back to `npx -y 
 ## Plugin Layout
 
 ```text
-plugins/babysitter-openclaw/
+artifacts/generated-plugins/openclaw/
 |-- package.json              # npm package manifest
 |-- plugin.json               # Babysitter plugin manifest
 |-- openclaw.plugin.json      # OpenClaw-native plugin manifest
@@ -262,7 +269,7 @@ npm install
 ### Running Tests
 
 ```bash
-cd plugins/babysitter-openclaw
+cd artifacts/generated-plugins/openclaw
 npm test
 npm run test:integration
 npm run test:packaged-install
@@ -292,8 +299,14 @@ PLUGIN_ROOT="$(pwd)"
 SDK_VERSION=$(node -e "try{console.log(JSON.parse(require('fs').readFileSync('${PLUGIN_ROOT}/versions.json','utf8')).sdkVersion||'latest')}catch{console.log('latest')}")
 npm i -g @a5c-ai/babysitter-sdk@$SDK_VERSION
 
-CLI="npx -y @a5c-ai/babysitter-sdk@$SDK_VERSION"
+if command -v babysitter >/dev/null 2>&1 && babysitter --version >/dev/null 2>&1; then
+  CLI="babysitter"
+else
+  CLI="npm exec --yes --package @a5c-ai/babysitter-sdk@$SDK_VERSION -- babysitter"
+fi
 ```
+
+If a stale or broken global shim fails with `MODULE_NOT_FOUND`, repair it with `npm rm -g @a5c-ai/babysitter @a5c-ai/babysitter-sdk && npm i -g @a5c-ai/babysitter-sdk@$SDK_VERSION`, then re-run `babysitter --version`.
 
 ## Troubleshooting
 
