@@ -1,6 +1,6 @@
 {
   "name": "@a5c-ai/babysitter-openclaw",
-  "version": "6.0.1-staging.6e8c63e09c3b",
+  "version": "6.0.1-staging.bd11c5b1bca5",
   "type": "module",
   "description": "Orchestrate complex, multi-step workflows with event-sourced state management, hook-based extensibility, and human-in-the-loop approval",
   "openclaw": {
@@ -22,7 +22,7 @@
     "sdk-integration"
   ],
   "dependencies": {
-    "@a5c-ai/babysitter-sdk": "6.0.1-staging.6e8c63e09c3b"
+    "@a5c-ai/babysitter-sdk": "6.0.1-staging.bd11c5b1bca5"
   },
   "peerDependencies": {
     "openclaw": "*"
